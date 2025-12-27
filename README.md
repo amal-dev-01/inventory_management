@@ -45,8 +45,8 @@ A full-stack product inventory management application built with **React**, **Re
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/inventory-management.git
-   cd inventory-management/backend
+   git clone https://github.com/amal-dev-01/inventory_management.git
+   cd inventory_management/backend
    ```
 
 2. **Create a virtual environment**
@@ -80,7 +80,10 @@ A full-stack product inventory management application built with **React**, **Re
    python manage.py runserver
    ```
 
-   Backend will be available at `http://localhost:8000`
+   Backend will be available at `http://127.0.0.1:8000/api/`
+   
+   Admin Panel `http://127.0.0.1:8000/admin`
+   
 
 ### Frontend Setup
 
