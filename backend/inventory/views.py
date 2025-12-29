@@ -1,44 +1,36 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
-from inventory.mixins import SearchMixin
 from inventory.models import Product
 from inventory.serializers import ProductSerializer
+from inventory.utils import apply_search
+from inventory.pagination import paginate_queryset
 
 
-# Product CRUD
-class ProductListCreateAPIView(APIView, SearchMixin):
-    """
-    Handles:
-    - GET: Retrieve all products
-    - POST: Create product
-    """
 
-    search_fields = ['name','price', 'stock']
+# LIST & CREATE (GET + POST)
 
-    def get_queryset(self):
-        return Product.objects.all()
+@api_view(['GET', 'POST'])
+def product_list_create(request):
+    search_fields = ['name']
 
     # GET
-    def get(self, request):
-        try:
-            queryset = self.get_queryset()
-            queryset = self.apply_search(queryset, request)
-            return self.paginate(queryset, request, ProductSerializer)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+    if request.method == 'GET':
+        queryset = Product.objects.all().order_by('pk')
+        queryset = apply_search(queryset, request, search_fields)
+        return paginate_queryset(queryset, request, ProductSerializer)
+
     # POST
-    def post(self, request):
+    if request.method == 'POST':
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
                 {
-                    "message": "Product created successfully",
+                    "message": "Product created successfully", 
                     "data": serializer.data
                 },
                 status=status.HTTP_201_CREATED
@@ -50,47 +42,38 @@ class ProductListCreateAPIView(APIView, SearchMixin):
 
 
 
-class ProductRetrieveUpdateDeleteAPIView(APIView):
+# RETRIEVE, UPDATE, DELETE (GET + PUT + DELETE)
 
-    """
-    Handles:
-    - GET: Retrieve product
-    - PUT: Update product
-    - DELETE: Delete product
-    """
+@api_view(['GET', 'PUT', 'DELETE'])
+def product_update_delete(request, pk):
+    product = get_object_or_404(Product, pk=pk)
 
-    def get_object(self, pk):
-        return get_object_or_404(Product, pk=pk)
-    
-    # GET
-    def get(self, request, pk):
-        product = self.get_object(pk)
+    # GET (Retrieve single product)
+    if request.method == 'GET':
         serializer = ProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # PUT
-    def put(self, request, pk):
-        product = self.get_object(pk)
+    if request.method == 'PUT':
         serializer = ProductSerializer(product, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
                 {
-                    "message": "Product updated", 
+                    "message": "Product updated",
                     "data": serializer.data
-                }
+                },
+                status=status.HTTP_200_OK
             )
         return Response(
-            {"errors": serializer.errors}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+                {"errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    # DELETE
-    def delete(self, request, pk):
-        product = self.get_object(pk)
+    # DELETE 
+    if request.method == 'DELETE':
         product.delete()
         return Response(
-            {"detail": "Product deleted successfully"},
+            {"message": "Product deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
-
